@@ -1,9 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bms-app
-  labels:
-    app: bms
+  name: bms-deployment
+  namespace: gowrish-ns
 spec:
   replicas: 2
   selector:
@@ -16,6 +15,9 @@ spec:
     spec:
       containers:
       - name: bms-container
-        image: kastrov/bms:latest  # Replace with your Docker image
+        image: gowrish006/gowrish-bms:v2
         ports:
-        - containerPort: 3000  # Replace with the port your app runs on
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: bms-app-config

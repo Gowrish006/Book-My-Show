@@ -1,19 +1,22 @@
-FROM node:18
+FROM node:18 AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
-RUN npm install --legacy-peer-deps
-
-RUN npm install chokidar@3.5.3
+RUN npm install
 
 COPY . .
 
 ENV NODE_OPTIONS=--openssl-legacy-provider
-ENV HOST=0.0.0.0
-ENV PORT=3000
 
-EXPOSE 3000
+RUN npm run build
 
-CMD ["npm","start"]
+
+FROM nginx:alpine
+
+COPY --from=build /app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

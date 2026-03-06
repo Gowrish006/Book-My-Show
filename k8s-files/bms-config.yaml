@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bms-app-config
+  namespace: gowrish-ns
+data:
+  PORT: "80"
