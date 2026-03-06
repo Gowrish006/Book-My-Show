@@ -31,11 +31,13 @@ pipeline {
             steps {
                 dir('bookmyshow-app') {
                     withSonarQubeEnv('sonar-server') {
-                        sh """
-                        ${tool 'sonar-scanner'}/bin/sonar-scanner \
-                        -Dsonar.projectKey=Gowrish-BMS \
-                        -Dsonar.sources=.
-                        """
+                        script {
+                          sh """
+                          ${tool 'sonar-scanner'}/bin/sonar-scanner \
+                          -Dsonar.projectKey=Gowrish-BMS \
+                          -Dsonar.sources=.
+                          """
+                        }
                     }
                 }
             }
@@ -49,11 +51,68 @@ pipeline {
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Push Docker Image to DockerHub') {
             steps {
-                sh 'docker run -d -p 3000:3000 --name bookmyshow gowrish006/gowrish-bms:v1.0'
+                script {
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                        sh 'docker push gowrish006/gowrish-bms:v1.0'
+                    }
+                }
             }
         }
 
+        stage('Run Docker Container') {
+            steps {
+                sh '''
+                docker stop bookmyshow || true
+                docker rm bookmyshow || true
+                docker run -d -p 3000:3000 --name bookmyshow gowrish006/gowrish-bms:v1.0
+                '''
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            emailext(
+                subject: "Jenkins Build SUCCESS - BookMyShow",
+                body: """
+Pipeline executed successfully.
+
+Project: BookMyShow
+Build Number: ${env.BUILD_NUMBER}
+Job Name: ${env.JOB_NAME}
+
+Docker Image: gowrish006/gowrish-bms:v1.0
+Application deployed successfully.
+
+Access Application:
+http://<JENKINS_SERVER_IP>:3000
+""",
+                to: "poolagowrish1920@gmail.com"
+            )
+        }
+
+        failure {
+            emailext(
+                subject: "Jenkins Build FAILED - BookMyShow",
+                body: """
+Pipeline execution FAILED.
+
+Project: BookMyShow
+Build Number: ${env.BUILD_NUMBER}
+Job Name: ${env.JOB_NAME}
+
+Check Jenkins console logs for details.
+""",
+                to: "poolagowrish1920@gmail.com"
+            )
+        }
+
+        always {
+            echo "Pipeline finished."
+        }
     }
 }
